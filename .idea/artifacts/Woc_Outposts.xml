@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Woc-Outposts">
+    <output-path>$PROJECT_DIR$/out/artifacts/Woc_Outposts</output-path>
+    <root id="archive" name="Woc-Outposts.jar">
+      <element id="module-output" name="Woc-Outposts" />
+      <element id="file-copy" path="$PROJECT_DIR$/src/main/resources/plugin.yml" />
+      <element id="file-copy" path="$PROJECT_DIR$/src/main/resources/config.yml" />
+    </root>
+  </artifact>
+</component>

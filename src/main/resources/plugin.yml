@@ -1,0 +1,17 @@
+name: WOC-Outposts
+version: 1.0
+main: com.jeepy.wocoutposts.Main
+description: A plugin for creating outposts with objectives in a Minecraft war server.
+
+commands:
+  outpost:
+    description: Manage outposts (start, stop, lootpool, block)
+    usage: /outpost <start|stop|lootpool|block>
+    aliases: [opost]
+    permission: wocoutposts.command.outpost
+    permission-message: You do not have permission to use this command.
+
+permissions:
+  wocoutposts.command.outpost:
+    description: Allows a player to use the /outpost command
+    default: op
