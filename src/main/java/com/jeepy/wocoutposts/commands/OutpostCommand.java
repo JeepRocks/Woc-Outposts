@@ -1,6 +1,7 @@
 package com.jeepy.wocoutposts.commands;
 
 import com.jeepy.wocoutposts.Main;
+import com.jeepy.wocoutposts.managers.ConfigManager;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -13,14 +14,13 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Set;
 
 public class OutpostCommand implements CommandExecutor {
 
-    private Main plugin;
+    private final ConfigManager configManager;
 
-    public OutpostCommand(Main plugin) {
-        this.plugin = plugin;
+    public OutpostCommand(ConfigManager configManager) {
+        this.configManager = configManager;
     }
 
     @Override
@@ -39,20 +39,23 @@ public class OutpostCommand implements CommandExecutor {
 
         Player player = sender instanceof Player ? (Player) sender : null;
 
+        // Cast plugin to Main to access methods specific to your Main class
+        Main mainPlugin = (Main) configManager.getPlugin();
+
         switch (args[0].toLowerCase()) {
             case "start":
-                plugin.getObjectiveManager().startObjective();
+                mainPlugin.getObjectiveManager().startObjective();
                 sender.sendMessage("Objective started.");
                 break;
 
             case "stop":
-                plugin.getObjectiveManager().stopObjective();
+                mainPlugin.getObjectiveManager().stopObjective();
                 sender.sendMessage("Objective stopped.");
                 break;
 
             case "lootpool":
                 if (player != null) {
-                    player.openInventory(plugin.getLootPoolGUI().getLootPoolInventory());
+                    player.openInventory(mainPlugin.getLootPoolGUI().getLootPoolInventory());
                 }
                 break;
 
@@ -65,7 +68,7 @@ public class OutpostCommand implements CommandExecutor {
 
             case "chest":
                 if (player != null) {
-                    markChest(player);
+                    markChest(player, mainPlugin);
                 }
                 break;
 
@@ -92,17 +95,16 @@ public class OutpostCommand implements CommandExecutor {
     }
 
     // Method to mark a chest for refilling
-    private void markChest(Player player) {
+    private void markChest(Player player, Main mainPlugin) {
         // Use getTargetBlock with a null set for transparent materials in older versions
         Block block = player.getTargetBlock((HashSet<Byte>) null, 5);  // Target any block within 5 blocks
 
         if (block != null && block.getType() == Material.CHEST) {
             Chest chest = (Chest) block.getState();  // Get the chest state from the block
-            plugin.getChestManager().addChest(block.getLocation());  // Store chest location in ChestManager
+            mainPlugin.getChestManager().addChest(block.getLocation());  // Store chest location in ChestManager
             player.sendMessage("Chest marked for refilling during the objective.");
         } else {
             player.sendMessage("You need to look at a chest to mark it!");
         }
     }
-
 }

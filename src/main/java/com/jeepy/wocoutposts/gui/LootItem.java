@@ -2,12 +2,13 @@ package com.jeepy.wocoutposts.gui;
 
 import org.bukkit.inventory.ItemStack;
 import com.jeepy.wocoutposts.enums.Rarity;
+
 import java.util.Objects;
 
 public class LootItem {
 
-    private ItemStack item;
-    private Rarity rarity;
+    private final ItemStack item;
+    private final Rarity rarity;
 
     public LootItem(ItemStack item, Rarity rarity) {
         this.item = item;
@@ -20,14 +21,6 @@ public class LootItem {
 
     public Rarity getRarity() {
         return rarity;
-    }
-
-    public void setItem(ItemStack item) {
-        this.item = item;
-    }
-
-    public void setRarity(Rarity rarity) {
-        this.rarity = rarity;
     }
 
     // Override equals to compare LootItem objects based on item and rarity

@@ -6,90 +6,74 @@ import com.jeepy.wocoutposts.listeners.OutpostListener;
 import com.jeepy.wocoutposts.managers.ChestManager;
 import com.jeepy.wocoutposts.managers.ObjectiveManager;
 import com.jeepy.wocoutposts.scheduler.ObjectiveScheduler;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
+import com.jeepy.wocoutposts.managers.ConfigManager;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.io.File;
-import java.io.IOException;
 
 public class Main extends JavaPlugin {
 
     private ObjectiveManager objectiveManager;
     private ChestManager chestManager;
     private LootPoolGUI lootPoolGUI;
-    private File customConfigFile;
-    private FileConfiguration customConfig;
+    private ConfigManager configManager;
 
     @Override
     public void onEnable() {
-        // Load or create the default configuration file (config.yml)
-        saveDefaultConfig(); // This manages config.yml
+        getLogger().info("Woc-Outposts plugin is starting...");
 
-        // Load or create the custom loot configuration file (WOC-Outposts.yml)
-        createCustomConfig();
+        // Initialize configuration manager to handle both default and custom configurations
+        configManager = new ConfigManager(this);
+        getLogger().info("ConfigManager initialized.");
 
-        // Initialize all the managers and systems
-        this.objectiveManager = new ObjectiveManager(this);
-        this.chestManager = new ChestManager(this);
-        this.lootPoolGUI = new LootPoolGUI(this);
+        // Initialize managers and systems
+        this.objectiveManager = new ObjectiveManager(this, configManager.getCustomConfig());
+        getLogger().info("ObjectiveManager initialized.");
 
-        // Register any commands, events, and schedules
-        getCommand("outpost").setExecutor(new OutpostCommand(this));
-        getServer().getScheduler().runTaskTimer(this, new ObjectiveScheduler(objectiveManager, this), 0L, 72000L); // 6 hours interval
-        getServer().getPluginManager().registerEvents(new OutpostListener(this), this);
+        this.chestManager = new ChestManager(configManager);
+        getLogger().info("ChestManager initialized.");
+
+        this.lootPoolGUI = new LootPoolGUI(configManager);
+        getLogger().info("LootPoolGUI initialized.");
+
+        // Register commands, events, and schedule tasks
+        getCommand("outpost").setExecutor(new OutpostCommand(configManager));
+        getLogger().info("OutpostCommand registered.");
+
+        getServer().getScheduler().runTaskTimer(this, new ObjectiveScheduler(objectiveManager, configManager), 0L, 72000L); // 6-hour interval
+        getLogger().info("ObjectiveScheduler task scheduled.");
+
+        getServer().getPluginManager().registerEvents(new OutpostListener(configManager), this);
+        getLogger().info("OutpostListener registered.");
+
+        getServer().getPluginManager().registerEvents(new LootPoolGUI(configManager), this);
+        getLogger().info("LootPoolGUI registered.");
+
+        getLogger().info("Woc-Outposts plugin has been successfully enabled.");
     }
 
     @Override
     public void onDisable() {
-        getServer().getScheduler().cancelTasks(this);  // Cancel all tasks associated with this plugin
-        saveCustomConfig();  // Ensure WOC-Outposts.yml is saved on disable
-        saveConfig(); // Save the regular config.yml
-    }
+        getLogger().info("Woc-Outposts plugin is shutting down...");
 
-    // Create or load the custom loot table config file (WOC-Outposts.yml)
-    public void createCustomConfig() {
-        customConfigFile = new File(getDataFolder(), "WOC-Outposts.yml");
+        // Cancel running tasks if objectives are active
+        if (objectiveManager != null && objectiveManager.isObjectiveActive()) {
+            getServer().getScheduler().cancelTasks(this);
+            getLogger().info("All tasks associated with Woc-Outposts plugin have been canceled.");
 
-        if (!customConfigFile.exists()) {
-            try {
-                // Create the WOC-Outposts.yml file only if it doesn't exist
-                customConfigFile.getParentFile().mkdirs();
-                customConfigFile.createNewFile();  // Create a new empty config file
-                getLogger().info("Created WOC-Outposts.yml file as it did not exist.");
-            } catch (IOException e) {
-                getLogger().severe("Could not create WOC-Outposts.yml");
-                e.printStackTrace();
+            ObjectiveScheduler scheduler = objectiveManager.getScheduler();
+            if (scheduler != null) {
+                scheduler.saveRemainingTime();
+                getLogger().info("Remaining time for active objectives has been saved.");
             }
         }
 
-        customConfig = YamlConfiguration.loadConfiguration(customConfigFile);  // Load the custom config
-    }
+        // Save configurations
+        configManager.saveCustomConfig();
+        getLogger().info("Custom configuration (WOC-Outposts.yml) has been saved.");
 
-    // Save the custom loot table config file
-    public void saveCustomConfig() {
-        try {
-            if (customConfigFile != null && customConfig != null) {
-                customConfig.save(customConfigFile);  // Save the WOC-Outposts.yml file only if initialized properly
-                getLogger().info("WOC-Outposts.yml has been saved.");
-            }
-        } catch (IOException e) {
-            getLogger().severe("Could not save WOC-Outposts.yml");
-            e.printStackTrace();
-        }
-    }
+        saveConfig();  // Save the default config.yml
+        getLogger().info("Default configuration (config.yml) has been saved.");
 
-    // Load the custom loot table config
-    public void loadCustomConfig() {
-        if (customConfigFile == null) {
-            customConfigFile = new File(getDataFolder(), "WOC-Outposts.yml");
-        }
-        customConfig = YamlConfiguration.loadConfiguration(customConfigFile);
-    }
-
-    // Get the custom loot table config
-    public FileConfiguration getCustomConfig() {
-        return this.customConfig;
+        getLogger().info("Woc-Outposts plugin has been successfully disabled.");
     }
 
     public ObjectiveManager getObjectiveManager() {

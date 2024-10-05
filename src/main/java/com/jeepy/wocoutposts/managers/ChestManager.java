@@ -1,8 +1,8 @@
 package com.jeepy.wocoutposts.managers;
 
-import com.jeepy.wocoutposts.Main;
 import com.jeepy.wocoutposts.enums.Rarity;
 import com.jeepy.wocoutposts.gui.LootItem;
+import com.jeepy.wocoutposts.Main;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Chest;
@@ -15,77 +15,83 @@ import java.util.stream.Collectors;
 
 public class ChestManager {
 
-    private Main plugin;
-    private List<Location> activeChests; // Store chest locations as Location objects
-    private Random random;
+    private final ConfigManager configManager;
+    private final List<Location> activeChests;
+    private final Random random;
 
-    // Rarity percentages, configurable via WOC-Outposts.yml
     private int commonChance;
     private int uncommonChance;
     private int rareChance;
     private int epicChance;
     private int legendaryChance;
 
-    public ChestManager(Main plugin) {
-        this.plugin = plugin;
+    public ChestManager(ConfigManager configManager) {
+        this.configManager = configManager;
         this.activeChests = new ArrayList<>();
         this.random = new Random();
-
-        // Load rarity percentages from WOC-Outposts.yml
         loadRarityChances();
     }
 
-    // Load rarity chances from WOC-Outposts.yml
     private void loadRarityChances() {
-        this.commonChance = plugin.getCustomConfig().getInt("loot.rarity.common", 60);
-        this.uncommonChance = plugin.getCustomConfig().getInt("loot.rarity.uncommon", 25);
-        this.rareChance = plugin.getCustomConfig().getInt("loot.rarity.rare", 10);
-        this.epicChance = plugin.getCustomConfig().getInt("loot.rarity.epic", 5);
-        this.legendaryChance = plugin.getCustomConfig().getInt("loot.rarity.legendary", 1);
+        this.commonChance = configManager.getCustomConfig().getInt("loot.rarity.common", 60);
+        this.uncommonChance = configManager.getCustomConfig().getInt("loot.rarity.uncommon", 25);
+        this.rareChance = configManager.getCustomConfig().getInt("loot.rarity.rare", 10);
+        this.epicChance = configManager.getCustomConfig().getInt("loot.rarity.epic", 5);
+        this.legendaryChance = configManager.getCustomConfig().getInt("loot.rarity.legendary", 1);
     }
 
-    // Add a chest location to the list
     public void addChest(Location chestLocation) {
         if (chestLocation.getBlock().getType() == Material.CHEST) {
             activeChests.add(chestLocation);
+        } else {
+            configManager.getPlugin().getLogger().warning("Tried to add a non-chest block as a chest at " + chestLocation);
         }
     }
 
-    // Refill all active chests
     public void refillChests() {
-        if (!plugin.getObjectiveManager().isObjectiveActive()) return;
+        Main mainPlugin = (Main) configManager.getPlugin();
+
+        if (!mainPlugin.getObjectiveManager().isObjectiveActive()) return;
+
+        int itemsPerChest = configManager.getCustomConfig().getInt("loot.items_per_chest", 5);  // Configurable number of items
 
         for (Location location : activeChests) {
             if (location.getBlock().getType() == Material.CHEST) {
                 Chest chest = (Chest) location.getBlock().getState();
-                chest.getInventory().clear();  // Clear the current inventory
+                chest.getBlockInventory().clear();
 
-                // Roll for 5 items and add them to the chest
-                List<ItemStack> selectedItems = rollForItems(5);  // Roll for 5 items
-                for (ItemStack item : selectedItems) {
-                    chest.getInventory().addItem(item);  // Add items to chest
+                List<ItemStack> items = rollForItems(itemsPerChest);
+                for (ItemStack item : items) {
+                    if (item != null) {
+                        chest.getBlockInventory().addItem(item);
+                    }
                 }
+
+                configManager.getPlugin().getLogger().info("Refilled chest at " + location);
             } else {
-                plugin.getLogger().warning("Block at " + location + " is not a chest.");
+                configManager.getPlugin().getLogger().warning("Block at " + location + " is not a chest.");
             }
         }
     }
 
-    // Roll for multiple items (e.g., 5 items)
+    // Method to roll for multiple items
     private List<ItemStack> rollForItems(int numberOfItems) {
         List<ItemStack> selectedItems = new ArrayList<>();
         for (int i = 0; i < numberOfItems; i++) {
             ItemStack item = rollForItem();
             if (item != null) {
                 selectedItems.add(item);
+            } else {
+                configManager.getPlugin().getLogger().warning("No item found for rarity roll.");
             }
         }
         return selectedItems;
     }
 
-    // RNG logic to roll for an item based on rarity
+    // Method to roll for a single item based on rarity
     private ItemStack rollForItem() {
-        int roll = random.nextInt(100);  // Random number between 0 and 99
+        int roll = random.nextInt(100);  // Roll for rarity
+        Main mainPlugin = (Main) configManager.getPlugin();
 
         Rarity selectedRarity;
         if (roll < commonChance) {
@@ -100,21 +106,27 @@ public class ChestManager {
             selectedRarity = Rarity.LEGENDARY;
         }
 
-        // Get items of the selected rarity from the loot pool
-        List<LootItem> filteredItems = plugin.getLootPoolGUI().getLootPoolItems().stream()
-                .filter(lootItem -> lootItem.getRarity() == selectedRarity)
+        // Log the rolled rarity using the raw enum name (name())
+        configManager.getPlugin().getLogger().info("Rolled rarity: " + selectedRarity.name());
+
+        // Filter the items based on rarity (compare raw enum values)
+        List<LootItem> filteredItems = mainPlugin.getLootPoolGUI().getLootPoolItems().stream()
+                .filter(lootItem -> lootItem.getRarity() == selectedRarity)  // Compare the raw enum, not toString()
                 .collect(Collectors.toList());
 
         if (!filteredItems.isEmpty()) {
-            // Randomly pick an item from the filtered list
-            return filteredItems.get(random.nextInt(filteredItems.size())).getItem();
+            ItemStack selectedItem = filteredItems.get(random.nextInt(filteredItems.size())).getItem();
+            configManager.getPlugin().getLogger().info("Selected item: " + selectedItem.getType() + " for rarity: " + selectedRarity.name());
+            return selectedItem;
+        } else {
+            configManager.getPlugin().getLogger().warning("No items found for rarity: " + selectedRarity.name());
         }
 
-        return null;  // If no items of that rarity are available
+        return null;  // No items of the selected rarity found
     }
 
-    // Periodically refill chests while the objective is active
     public void startChestRefillTask() {
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::refillChests, 0L, 600L); // 600 ticks = 30 seconds
+        Main mainPlugin = (Main) configManager.getPlugin();
+        mainPlugin.getServer().getScheduler().runTaskTimer(mainPlugin, this::refillChests, 0L, 600L);  // 600 ticks = 30 seconds
     }
 }

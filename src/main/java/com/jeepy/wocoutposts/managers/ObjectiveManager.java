@@ -1,8 +1,10 @@
 package com.jeepy.wocoutposts.managers;
 
+import com.jeepy.wocoutposts.scheduler.ObjectiveScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scoreboard.*;
@@ -22,8 +24,9 @@ public class ObjectiveManager {
     private final int radius;  // Configurable radius from config.yml
     private final int progressRate;  // Configurable progress rate from config.yml
     private boolean isObjectiveActive;
+    private ObjectiveScheduler scheduler;
 
-    public ObjectiveManager(Main plugin) {
+    public ObjectiveManager(Main plugin, FileConfiguration customConfig) {
         this.plugin = plugin;
         this.playerHoldProgress = new HashMap<>();
         this.playerScoreboards = new HashMap<>();
@@ -169,6 +172,11 @@ public class ObjectiveManager {
     // Helper method to check if the player is within the outpost area
     private boolean isPlayerInOutpostArea(Player player) {
         return player.getLocation().distance(outpostLocation) <= radius;
+    }
+
+    public ObjectiveScheduler getScheduler() {
+        // Return the current instance of ObjectiveScheduler if needed
+        return this.scheduler;  // Assuming scheduler is a field in ObjectiveManager
     }
 
     // Method to reward a player upon completing the objective
