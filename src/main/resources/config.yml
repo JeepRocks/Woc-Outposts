@@ -1,0 +1,19 @@
+
+
+# Woc-Teams config
+# --------------------
+# Outpost Config
+charge-time: 300
+refill-interval: 60
+outposts:
+proximity-radius: 10
+# --------------------
+
+#---------------------
+# Loot Pool(s) Config
+lootpool:
+#---------------------
+
+
+
+
