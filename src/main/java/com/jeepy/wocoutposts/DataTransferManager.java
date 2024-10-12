@@ -28,16 +28,25 @@ public class DataTransferManager {
         try {
             // Fetch all teams from Woc-Teams
             List<Team> teams = wocTeamsDatabaseManager.getAllTeams();
+            plugin.getLogger().info("Number of teams fetched from Woc-Teams: " + teams.size());
+            for (Team team : teams) {
+                plugin.getLogger().info("Team fetched: ID=" + team.getId() + ", Name=" + team.getName());
+            }
+
             for (Team team : teams) {
                 Integer teamId = team.getId();
                 String teamName = team.getName();
                 UUID ownerUUID = team.getOwner();
 
+                plugin.getLogger().info("Transferring team: ID=" + teamId + ", Name=" + teamName + ", Owner=" + ownerUUID);
+
                 // Save the team into Woc-Outposts database
                 wocOutpostsDatabaseManager.saveTeamToOutpostsDb(teamId, teamName, ownerUUID);
+                plugin.getLogger().info("Team transferred successfully to Woc-Outposts DB: " + teamName);
             }
         } catch (SQLException e) {
-            throw new SQLException("Could not transfer teams data from Woc-Teams to Woc-Outposts", e);
+            plugin.getLogger().log(Level.SEVERE, "Could not transfer teams data from Woc-Teams to Woc-Outposts", e);
+            throw new SQLException("Could not transfer teams data", e);
         }
     }
 

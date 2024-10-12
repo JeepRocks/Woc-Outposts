@@ -22,14 +22,13 @@ import java.util.logging.Level;
 public class Main extends JavaPlugin {
 
     private static ConfigManager configManager;
-    private LootPoolManager lootPoolManager;
     private LootPoolGUI lootPoolGUI;
     private ChestListener chestListener;
     private WocTeamsDatabaseManager teamsDatabaseManager;  // Woc-Teams DB manager
     private OutpostDatabaseManager wocOutpostsDatabaseManager;  // Woc-Outposts DB manager
     private DataTransferManager dataTransferManager;
     private static OutpostDatabaseManager databaseManager;  // Main outpost DB manager
-    private Map<String, ClassifiedOutpost> activeClassifiedOutposts = new ConcurrentHashMap<>();  // Thread-safe map
+    private final Map<String, ClassifiedOutpost> activeClassifiedOutposts = new ConcurrentHashMap<>();  // Thread-safe map
 
     @Override
     public void onEnable() {
@@ -58,7 +57,7 @@ public class Main extends JavaPlugin {
 
         // Initialize Managers
         configManager = new ConfigManager(this, databaseManager);
-        lootPoolManager = new LootPoolManager(configManager);
+        LootPoolManager lootPoolManager = new LootPoolManager(configManager);
 
         // Initialize Listeners and GUI
         chestListener = new ChestListener(this, lootPoolManager);
@@ -67,6 +66,14 @@ public class Main extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(lootPoolGUIListener, this);
         getServer().getPluginManager().registerEvents(chestListener, this);
+
+        try {
+            dataTransferManager = new DataTransferManager(teamsDatabaseManager, wocOutpostsDatabaseManager, this);
+            dataTransferManager.transferTeamsData();  // Transfer teams data from Woc-Teams to Woc-Outposts
+            getLogger().info("Teams data transferred successfully.");
+        } catch (SQLException e) {
+            getLogger().log(Level.SEVERE, "Error during data transfer from Woc-Teams to Woc-Outposts", e);
+        }
 
         try {
             // Pass both database managers to DataTransferManager to handle data transfer

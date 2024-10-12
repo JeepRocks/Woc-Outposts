@@ -68,6 +68,9 @@ public class ClassifiedOutpost implements Runnable, Listener {
             Location beaconLocation = block.getLocation();
             Player player = event.getPlayer();
 
+            // Debugging: Log the beacon placement event
+            plugin.getLogger().info("[DEBUG] Beacon placed by " + player.getName() + " at location " + beaconLocation);
+
             // Get the item in the player's hand to check the beacon's name
             ItemStack itemInHand = event.getItemInHand();
             if (itemInHand != null && itemInHand.hasItemMeta()) {
@@ -76,6 +79,8 @@ public class ClassifiedOutpost implements Runnable, Listener {
                 // Check if the beacon has a display name
                 if (meta.hasDisplayName()) {
                     String outpostName = meta.getDisplayName();  // Use the beacon's display name as the outpost name
+
+                    plugin.getLogger().info("[DEBUG] Beacon name: " + outpostName);
 
                     try {
                         // Save the beacon location and outpost name to the database
@@ -90,9 +95,11 @@ public class ClassifiedOutpost implements Runnable, Listener {
                         player.sendMessage(ChatColor.RED + "An error occurred while saving the beacon location.");
                     }
                 } else {
+                    plugin.getLogger().info("[DEBUG] Beacon placed without a name.");
                     player.sendMessage(ChatColor.RED + "The beacon needs to have a name.");
                 }
             } else {
+                plugin.getLogger().info("[DEBUG] Invalid item or item meta during beacon placement.");
                 player.sendMessage(ChatColor.RED + "Invalid item or item meta.");
             }
         }
@@ -107,11 +114,17 @@ public class ClassifiedOutpost implements Runnable, Listener {
             Location beaconLocation = block.getLocation();
             Player player = event.getPlayer();
 
+            // Debugging: Log the beacon break event
+            plugin.getLogger().info("[DEBUG] Beacon broken by " + player.getName() + " at location " + beaconLocation);
+
             try {
                 // Retrieve the outpost name from the database using the beacon's location
                 String outpostName = databaseManager.getOutpostNameByLocation(beaconLocation);
 
                 if (outpostName != null) {
+                    // Debugging: Log the outpost name retrieved from the database
+                    plugin.getLogger().info("[DEBUG] Outpost found for broken beacon: " + outpostName);
+
                     // Delete the beacon location from the database using the outpost name
                     databaseManager.deleteBeaconLocation(beaconLocation);
                     player.sendMessage(ChatColor.YELLOW + "Outpost with name: " + outpostName + " has been removed.");
@@ -120,6 +133,7 @@ public class ClassifiedOutpost implements Runnable, Listener {
                     // Remove the outpost from the config manager
                     configManager.removeOutpost(outpostName);
                 } else {
+                    plugin.getLogger().info("[DEBUG] No outpost found for the broken beacon at " + beaconLocation);
                     player.sendMessage(ChatColor.RED + "No outpost found at this location.");
                 }
             } catch (SQLException e) {

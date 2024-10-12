@@ -165,4 +165,7 @@ public class ConfigManager {
         saveConfig();
     }
 
+    public OutpostDatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
 }

@@ -1,5 +1,6 @@
 package com.jeepy.wocoutposts.database;
 
+import com.jeepy.database.WocTeamsDatabaseManager;
 import com.jeepy.wocoutposts.Main;
 import com.jeepy.wocoutposts.objectives.Outpost;
 import org.bukkit.Location;
@@ -53,7 +54,7 @@ public class OutpostDatabaseManager {
     public void initialize() throws SQLException {
         connect();
         try {
-            // Create teams table with ownerUUID field
+            // Ensure that teams table has the correct columns
             try (PreparedStatement statement = connection.prepareStatement(
                     "CREATE TABLE IF NOT EXISTS teams (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -61,7 +62,12 @@ public class OutpostDatabaseManager {
                             "ownerUUID TEXT NOT NULL" +
                             ")")) {
                 statement.executeUpdate();
+                plugin.getLogger().info("Teams table in Outposts DB initialized successfully.");
             }
+
+
+
+
 
             // Create chests table
             try (PreparedStatement statement = connection.prepareStatement(
@@ -197,20 +203,20 @@ public class OutpostDatabaseManager {
         }
     }
 
-    public synchronized List<com.jeepy.teams.Team> fetchAllTeamsFromTeamsDb() throws SQLException {
+    public synchronized List<com.jeepy.teams.Team> fetchAllTeamsFromTeamsDb(WocTeamsDatabaseManager teamsDatabaseManager) throws SQLException {
         List<com.jeepy.teams.Team> teams = new ArrayList<>();
-        String sql = "SELECT id, teamName, ownerUUID FROM teams";
+        String sql = "SELECT id, teamName, ownerUUID FROM teams";  // Fetch the UUID as well
 
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                Integer id = rs.getInt("id");
-                String teamName = rs.getString("teamName");
-                UUID ownerUUID = UUID.fromString(rs.getString("ownerUUID"));
+                Integer id = rs.getInt("id");  // Fetch the team's ID as Integer
+                String teamName = rs.getString("teamName");  // Fetch the team's name
+                UUID ownerUUID = UUID.fromString(rs.getString("ownerUUID"));  // Fetch and convert the UUID
 
-                // Ensure proper reference is passed to the Team constructor
-                com.jeepy.teams.Team team = new com.jeepy.teams.Team(id, teamName, ownerUUID, plugin);  // Pass the correct plugin reference
+                // Now, pass the correct WocTeamsDatabaseManager instance
+                com.jeepy.teams.Team team = new com.jeepy.teams.Team(id, teamName, ownerUUID, teamsDatabaseManager);  // Pass teamsDatabaseManager instead of plugin
                 teams.add(team);
             }
         } catch (SQLException e) {
@@ -221,6 +227,7 @@ public class OutpostDatabaseManager {
     }
 
     public synchronized void saveTeamToOutpostsDb(Integer teamId, String teamName, UUID ownerUUID) throws SQLException {
+        plugin.getLogger().info("Saving team to Outposts DB: ID=" + teamId + ", Name=" + teamName + ", OwnerUUID=" + ownerUUID);
         if (teamId == null || teamName == null || ownerUUID == null) {
             throw new SQLException("Team ID, Team Name, or Owner UUID cannot be null");
         }
@@ -276,4 +283,5 @@ public class OutpostDatabaseManager {
         }
         return null;
     }
+
 }
