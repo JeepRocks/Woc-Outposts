@@ -50,51 +50,8 @@ public class DataTransferManager {
         }
     }
 
-    /**
-     * Removes a disbanded team from the Woc-Outposts database if it no longer exists in Woc-Teams.
-     *
-     * @param teamId the ID of the team to remove.
-     * @throws SQLException if there is an issue accessing the databases.
-     */
-    public void removeDisbandedTeam(Integer teamId) throws SQLException {
-        // Fetch all teams from Woc-Teams
-        List<Team> teams = wocTeamsDatabaseManager.getAllTeams();  // Correctly use the teams DB manager
-
-        // Check if the team still exists
-        boolean teamExists = teams.stream().anyMatch(team -> team.getId().equals(teamId));
-
-        // If the team doesn't exist in Woc-Teams, remove it from the Woc-Outposts database
-        if (!teamExists) {
-            wocOutpostsDatabaseManager.deleteTeamFromOutpostsDb(teamId);
-            plugin.getLogger().info("Team " + teamId + " removed from Woc-Outposts as it no longer exists in Woc-Teams.");
-        }
-    }
-
     // ---- Chest-related Methods ----
 
-    public List<Location> loadChestLocations() throws SQLException {
-        return wocOutpostsDatabaseManager.loadChestLocations();
-    }
-
-    public void saveChestLocation(Location location) throws SQLException {
-        wocOutpostsDatabaseManager.saveChestLocation(location);
-    }
-
-    public void deleteChestLocation(Location location) throws SQLException {
-        wocOutpostsDatabaseManager.deleteChestLocation(location);
-    }
 
     // ---- Beacon-related Methods ----
-
-    public Location loadLastBeaconLocation() throws SQLException {
-        return wocOutpostsDatabaseManager.loadLastBeaconLocation();
-    }
-
-    public void saveBeaconLocation(Location location, String name) throws SQLException {
-        wocOutpostsDatabaseManager.saveBeaconLocation(location, name);
-    }
-
-    public void deleteBeaconLocation(Location location) throws SQLException {
-        wocOutpostsDatabaseManager.deleteBeaconLocation(location);
-    }
 }

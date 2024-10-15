@@ -2,20 +2,23 @@ package com.jeepy.wocoutposts.objectives;
 
 import org.bukkit.Location;
 
-public class Outpost {
-    private final String name;
-    private final Location location;
+public abstract class Outpost {
 
-    public Outpost(String name, Location location) {
-        this.name = name;
-        this.location = location;
+    protected String outpostName;
+
+    public Outpost(String outpostName, Location beaconLocation) {
+        this.outpostName = outpostName;
     }
 
-    public String getName() {
-        return name;
+    public String getOutpostName() {
+        return outpostName;
     }
 
-    public Location getLocation() {
-        return location;
-    }
+    // Abstract methods that subclasses must implement
+    public abstract void startCharging();
+
+    public abstract void stopCharging();
+
+    public abstract void refillLoot();
+
 }

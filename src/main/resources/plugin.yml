@@ -4,14 +4,9 @@ main: com.jeepy.wocoutposts.Main
 depend: [Woc-Teams]
 description: A Minecraft plugin for managing outposts, loot pools, and refillable chests.
 commands:
-  opost:
-    description: Primary command for managing outposts, loot pools, and chests.
-    usage: /<command> [lootpool|MarkC|refill|start|give|stop|reload]
-    aliases: [outpost]
-    permission: wocoutposts.use
-    permission-message: You do not have permission to use this command.
-
-permissions:
-  wocoutposts.use:
-    description: Allows the use of all Woc-Outposts commands.
-    default: true
+  outpost:
+    description: Manage outposts (start, stop, create, delete, refill, etc.)
+    usage: /outpost <start|stop|create|delete|refill|debug> [args]
+  lootpool:
+    description: Manage loot pool for outposts (additem, removeitem, view)
+    usage: /lootpool <additem|removeitem|view> [args]

@@ -1,19 +1,49 @@
+# Classified Outpost Settings
+classified_outpost:
+  capture_radius: 20  # Radius for capturing the classified outpost
+  charge_reduction_rate: 1.5  # Charge reduction rate in contested state
+  overtime:
+    duration: 10  # Overtime duration in seconds
+    reduction_rate: 0.1  # Overtime reduction rate per loop
+  charge_thresholds: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # Thresholds to balance the charge
+  solo_player_boost: 1.0  # Boost for solo players
+  team_boost: 0.5  # Boost for teams
 
+# General Outpost Settings
+outpost:
+  radius: 15  # The radius for capturing the outpost
+  charge_reduction_rate: 1.0  # The percentage decrease in charge when contested
+  overtime:
+    duration: 5  # Time in seconds to get onto the objective during overtime
+    reduction_rate: 0.05  # Time reduction per overtime loop
 
-# Woc-Teams config
-# --------------------
-# Outpost Config
-charge-time: 300
-refill-interval: 60
-outposts:
-proximity-radius: 10
-# --------------------
-
-#---------------------
-# Loot Pool(s) Config
+# LootPool System
 lootpool:
-#---------------------
+  rarity_drop_rates:
+    common: 50.0
+    rare: 30.0
+    epic: 15.0
+    legendary: 5.0
+  refill_intervals: [10, 20, 30]  # Intervals at which loot chests refill
+  max_items_per_pool: 27  # Maximum items allowed in a loot pool
 
+# Classified Document System
+classified_document:
+  spawn_percentage: 100  # Charge percentage at which the document spawns
+  broadcast: true  # Whether to broadcast the document's location
+  randomized_chest: true  # Should the classified document chest be randomized
 
+# Scoreboard Settings
+scoreboard:
+  update_interval: 5  # How frequently to update the scoreboard
+  display:
+    outpost_charge_percentage: true
+    team_progress: true
+    loot_pool_status: true
 
+# Data Transfer Settings
+data_transfer_enabled: true
+
+# Dynamic Outpost Storage
+outposts:
 

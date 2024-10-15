@@ -1,25 +1,19 @@
 package com.jeepy.wocoutposts.database;
 
-import com.jeepy.database.WocTeamsDatabaseManager;
 import com.jeepy.wocoutposts.Main;
-import com.jeepy.wocoutposts.objectives.Outpost;
-import org.bukkit.Location;
-import org.bukkit.World;
 
 import java.io.File;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 
 public class OutpostDatabaseManager {
-    private final Main plugin;  // No need to be static
-    private Connection connection;  // No need to be static
+    private final Main plugin;
+    private Connection connection;
     private static final String DEFAULT_RANK = "MEMBER";
 
     public OutpostDatabaseManager(Main plugin, String teamsDbPath) {
-        this.plugin = plugin;  // Assign plugin reference to each instance
+        this.plugin = plugin;
     }
 
     public void connect() throws SQLException {
@@ -54,7 +48,7 @@ public class OutpostDatabaseManager {
     public void initialize() throws SQLException {
         connect();
         try {
-            // Ensure that teams table has the correct columns
+            // Create teams table
             try (PreparedStatement statement = connection.prepareStatement(
                     "CREATE TABLE IF NOT EXISTS teams (" +
                             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -65,33 +59,14 @@ public class OutpostDatabaseManager {
                 plugin.getLogger().info("Teams table in Outposts DB initialized successfully.");
             }
 
-
-
-
-
-            // Create chests table
+            // Create players table (for non-team players)
             try (PreparedStatement statement = connection.prepareStatement(
-                    "CREATE TABLE IF NOT EXISTS chests (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                            "world TEXT NOT NULL, " +
-                            "x DOUBLE NOT NULL, " +
-                            "y DOUBLE NOT NULL, " +
-                            "z DOUBLE NOT NULL" +
+                    "CREATE TABLE IF NOT EXISTS players (" +
+                            "uuid TEXT PRIMARY KEY, " +
+                            "playerName TEXT NOT NULL" +
                             ")")) {
                 statement.executeUpdate();
-            }
-
-            // Create beacons table
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "CREATE TABLE IF NOT EXISTS beacons (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                            "world TEXT NOT NULL, " +
-                            "x DOUBLE NOT NULL, " +
-                            "y DOUBLE NOT NULL, " +
-                            "z DOUBLE NOT NULL, " +
-                            "outpostName TEXT NOT NULL" +
-                            ")")) {
-                statement.executeUpdate();
+                plugin.getLogger().info("Players table in Outposts DB initialized successfully.");
             }
 
         } catch (SQLException e) {
@@ -100,139 +75,38 @@ public class OutpostDatabaseManager {
         }
     }
 
-    // ---- Chest-related Methods ----
-
-    // Save chest location
-    public void saveChestLocation(Location location) throws SQLException {
-        String query = "INSERT INTO chests (world, x, y, z) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, location.getWorld().getName());
-            statement.setDouble(2, location.getX());
-            statement.setDouble(3, location.getY());
-            statement.setDouble(4, location.getZ());
-            statement.executeUpdate();
-        }
-    }
-
-    // Load chest locations
-    public List<Location> loadChestLocations() throws SQLException {
-        List<Location> locations = new ArrayList<>();
-        String query = "SELECT world, x, y, z FROM chests";
-        try (PreparedStatement statement = connection.prepareStatement(query);
-             ResultSet rs = statement.executeQuery()) {
-            while (rs.next()) {
-                World world = plugin.getServer().getWorld(rs.getString("world"));
-                if (world != null) {
-                    double x = rs.getDouble("x");
-                    double y = rs.getDouble("y");
-                    double z = rs.getDouble("z");
-                    locations.add(new Location(world, x, y, z));
-                }
-            }
-        }
-        return locations;
-    }
-
-    // Delete chest location
-    public void deleteChestLocation(Location location) throws SQLException {
-        String query = "DELETE FROM chests WHERE world = ? AND x = ? AND y = ? AND z = ?";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, location.getWorld().getName());
-            statement.setDouble(2, location.getX());
-            statement.setDouble(3, location.getY());
-            statement.setDouble(4, location.getZ());
-            statement.executeUpdate();
-        }
-    }
-
-    // ---- Beacon-related Methods ----
-
-    // Save beacon location
-    public void saveBeaconLocation(Location location, String outpostName) throws SQLException {
-        String query = "INSERT INTO beacons (world, x, y, z, outpostName) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, location.getWorld().getName());
-            statement.setDouble(2, location.getX());
-            statement.setDouble(3, location.getY());
-            statement.setDouble(4, location.getZ());
-            statement.setString(5, outpostName);
-            statement.executeUpdate();
-        }
-    }
-
-    // Load the last beacon location
-    public Location loadLastBeaconLocation() throws SQLException {
-        String query = "SELECT world, x, y, z FROM beacons ORDER BY id DESC LIMIT 1";
-        try (PreparedStatement statement = connection.prepareStatement(query);
-             ResultSet rs = statement.executeQuery()) {
-            if (rs.next()) {
-                World world = plugin.getServer().getWorld(rs.getString("world"));
-                if (world != null) {
-                    double x = rs.getDouble("x");
-                    double y = rs.getDouble("y");
-                    double z = rs.getDouble("z");
-                    return new Location(world, x, y, z);
-                }
-            }
-        }
-        return null;
-    }
-
-    // Delete beacon location
-    public void deleteBeaconLocation(Location location) throws SQLException {
-        String query = "DELETE FROM beacons WHERE world = ? AND x = ? AND y = ? AND z = ?";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, location.getWorld().getName());
-            statement.setDouble(2, location.getX());
-            statement.setDouble(3, location.getY());
-            statement.setDouble(4, location.getZ());
-            statement.executeUpdate();
-        }
-    }
-
     // ---- Team-related methods ----
 
-    public synchronized void deleteTeamFromOutpostsDb(Integer teamId) throws SQLException {
-        String sql = "DELETE FROM teams WHERE id = ?";
-        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+    // Method to check if a team is already in the database
+    private boolean isTeamInDatabase(Integer teamId) throws SQLException {
+        String query = "SELECT id FROM teams WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
             pstmt.setInt(1, teamId);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Could not delete team from database", e);
-            throw new SQLException("Could not delete team from database", e);
-        }
-    }
-
-    public synchronized List<com.jeepy.teams.Team> fetchAllTeamsFromTeamsDb(WocTeamsDatabaseManager teamsDatabaseManager) throws SQLException {
-        List<com.jeepy.teams.Team> teams = new ArrayList<>();
-        String sql = "SELECT id, teamName, ownerUUID FROM teams";  // Fetch the UUID as well
-
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                Integer id = rs.getInt("id");  // Fetch the team's ID as Integer
-                String teamName = rs.getString("teamName");  // Fetch the team's name
-                UUID ownerUUID = UUID.fromString(rs.getString("ownerUUID"));  // Fetch and convert the UUID
-
-                // Now, pass the correct WocTeamsDatabaseManager instance
-                com.jeepy.teams.Team team = new com.jeepy.teams.Team(id, teamName, ownerUUID, teamsDatabaseManager);  // Pass teamsDatabaseManager instead of plugin
-                teams.add(team);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                return rs.next();  // Returns true if a result is found
             }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Could not fetch teams from database", e);
-            throw new SQLException("Could not fetch teams from database", e);
+            plugin.getLogger().log(Level.SEVERE, "Could not check if team exists in database", e);
+            throw new SQLException("Could not check if team exists in database", e);
         }
-        return teams;
     }
 
+    // Save team to database only if not already present
     public synchronized void saveTeamToOutpostsDb(Integer teamId, String teamName, UUID ownerUUID) throws SQLException {
         plugin.getLogger().info("Saving team to Outposts DB: ID=" + teamId + ", Name=" + teamName + ", OwnerUUID=" + ownerUUID);
+
         if (teamId == null || teamName == null || ownerUUID == null) {
             throw new SQLException("Team ID, Team Name, or Owner UUID cannot be null");
         }
 
-        String sql = "INSERT OR REPLACE INTO teams (id, teamName, ownerUUID) VALUES (?, ?, ?)";
+        // Check if the team is already in the database
+        if (isTeamInDatabase(teamId)) {
+            plugin.getLogger().info("Team " + teamName + " is already in the database.");
+            return;  // Team already exists, no need to add
+        }
+
+        // Add the team to the database
+        String sql = "INSERT INTO teams (id, teamName, ownerUUID) VALUES (?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, teamId);
             pstmt.setString(2, teamName);
@@ -244,44 +118,79 @@ public class OutpostDatabaseManager {
         }
     }
 
-    // ---- Outpost-related method ----
+    // Remove a team from the database
+    public synchronized void removeTeamFromOutpostsDb(Integer teamId) throws SQLException {
+        plugin.getLogger().info("Removing team from Outposts DB: ID=" + teamId);
 
-    public Outpost getOutpostByName(String outpostName) throws SQLException {
-        String query = "SELECT id, world, x, y, z FROM beacons WHERE outpostName = ?";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, outpostName);
-            ResultSet rs = statement.executeQuery();
-
-            if (rs.next()) {
-                String id = rs.getString("id");
-                World world = plugin.getServer().getWorld(rs.getString("world"));
-                if (world != null) {
-                    double x = rs.getDouble("x");
-                    double y = rs.getDouble("y");
-                    double z = rs.getDouble("z");
-                    Location location = new Location(world, x, y, z);
-                    return new Outpost(outpostName, location);
-                }
-            }
+        String sql = "DELETE FROM teams WHERE id = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, teamId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Could not remove team from database", e);
+            throw new SQLException("Could not remove team from database", e);
         }
-        return null;
     }
 
-    public String getOutpostNameByLocation(Location location) throws SQLException {
-        String query = "SELECT outpostName FROM beacons WHERE world = ? AND x = ? AND y = ? AND z = ?";
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, location.getWorld().getName());
-            statement.setDouble(2, location.getX());
-            statement.setDouble(3, location.getY());
-            statement.setDouble(4, location.getZ());
+    // ---- Player-related methods ----
 
-            ResultSet rs = statement.executeQuery();
+    // Method to check if a player is already in the database
+    private boolean isPlayerInDatabase(UUID playerUUID) throws SQLException {
+        plugin.getLogger().info("Checking if player " + playerUUID + " exists in the database.");
 
-            if (rs.next()) {
-                return rs.getString("outpostName");
+        String query = "SELECT uuid FROM players WHERE uuid = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, playerUUID.toString());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                boolean exists = rs.next();
+                plugin.getLogger().info("Player " + playerUUID + " exists in the database: " + exists);
+                return exists;
             }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Could not check if player exists in database", e);
+            throw new SQLException("Could not check if player exists in database", e);
         }
-        return null;
+    }
+
+    // Save player to database if not already present
+    public synchronized void savePlayerToOutpostsDb(UUID playerUUID, String playerName) throws SQLException {
+        plugin.getLogger().info("Saving player to Outposts DB: UUID=" + playerUUID + ", Name=" + playerName);
+
+        if (playerUUID == null || playerName == null) {
+            throw new SQLException("Player UUID or Name cannot be null");
+        }
+
+// Check if the player is already in the database
+        if (isPlayerInDatabase(playerUUID)) {
+            plugin.getLogger().info("Player " + playerName + " is already in the database.");
+            return;  // Player already exists, no need to add
+        }
+
+// Add the player to the database
+        String sql = "INSERT INTO players (uuid, playerName) VALUES (?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, playerUUID.toString());
+            pstmt.setString(2, playerName);
+            pstmt.executeUpdate();
+            plugin.getLogger().info("Player " + playerName + " successfully saved to the database.");
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Could not save player to database", e);
+            throw new SQLException("Could not save player to database", e);
+        }}
+
+    // Remove a player from the database
+    public synchronized void removePlayerFromOutpostsDb(UUID playerUUID) throws SQLException {
+        plugin.getLogger().info("Removing player from Outposts DB: UUID=" + playerUUID);
+
+        String sql = "DELETE FROM players WHERE uuid = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, playerUUID.toString());
+            pstmt.executeUpdate();
+            plugin.getLogger().info("Player " + playerUUID + " successfully removed from the database.");
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Could not remove player from database", e);
+            throw new SQLException("Could not remove player from database", e);
+        }
     }
 
 }
