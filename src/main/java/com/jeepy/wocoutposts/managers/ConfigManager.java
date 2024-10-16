@@ -32,11 +32,17 @@ public class ConfigManager {
         double classifiedChargeReductionRate = config.getDouble("classified_outpost.charge_reduction_rate", 1.5);
         int classifiedOvertimeDuration = config.getInt("classified_outpost.overtime.duration", 10);
         double classifiedOvertimeReductionRate = config.getDouble("classified_outpost.overtime.reduction_rate", 0.1);
+        int chargeTimeSeconds = config.getInt("classified_outpost.charge_time_seconds", 300);
+        if (chargeTimeSeconds <= 0) {
+            chargeTimeSeconds = 300;  // Set a default if the config is misconfigured
+            plugin.getLogger().warning("Invalid charge time. Setting to default: 300 seconds");
+        }
 
         plugin.getLogger().info("Classified Outpost capture radius: " + classifiedOutpostCaptureRadius);
         plugin.getLogger().info("Classified Outpost charge reduction rate: " + classifiedChargeReductionRate + "%");
         plugin.getLogger().info("Classified Outpost overtime duration: " + classifiedOvertimeDuration + " seconds");
         plugin.getLogger().info("Classified Outpost overtime reduction rate: " + classifiedOvertimeReductionRate + "% per loop");
+        plugin.getLogger().info("Classified Outpost charge time: " + chargeTimeSeconds + " seconds");
 
         // LootPool System Settings
         List<Integer> lootRefillIntervals = config.getIntegerList("lootpool.refill_intervals");

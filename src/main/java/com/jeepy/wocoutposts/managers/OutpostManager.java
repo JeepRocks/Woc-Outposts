@@ -64,23 +64,6 @@ public class OutpostManager {
         }
     }
 
-    // Helper method to save outpost location to config
-    private void saveOutpostToConfig(String outpostName, Location location) {
-        FileConfiguration config = plugin.getConfig();
-        String basePath = "outposts." + outpostName;
-
-        config.set(basePath + ".world", location.getWorld().getName());
-        config.set(basePath + ".x", location.getX());
-        config.set(basePath + ".y", location.getY());
-        config.set(basePath + ".z", location.getZ());
-
-        // Save config to persist the changes
-        plugin.saveConfig();
-
-        plugin.getLogger().info("Outpost " + outpostName + " has been added to the config.");
-    }
-
-
     // Utility method to check if the player is looking at a beacon block
     private Block getTargetBeacon(Player player) {
         BlockIterator iterator = new BlockIterator(player, 10);  // Look up to 10 blocks ahead
@@ -116,14 +99,15 @@ public class OutpostManager {
         Outpost outpost = outposts.get(outpostName);
 
         if (outpost == null) {
-            player.sendMessage("Outpost " + outpostName + " does not exist. Available outposts: " + String.join(", ", outposts.keySet()));
+            player.sendMessage("Outpost " + outpostName + " does not exist.");
             return;
         }
 
         // Ensure only ClassifiedOutpost starts charging
         if (outpost instanceof ClassifiedOutpost) {
+            ((ClassifiedOutpost) outpost).setChargingEnabled(true); // Enable charging
             outpost.startCharging();
-            player.sendMessage("ClassifiedOutpost " + outpostName + " has started charging.");
+            player.sendMessage("Charging for " + outpostName + " has started.");
         } else {
             player.sendMessage("Outpost " + outpostName + " is not a ClassifiedOutpost and cannot start charging.");
         }
@@ -140,7 +124,7 @@ public class OutpostManager {
 
         // Ensure only ClassifiedOutpost stops charging
         if (outpost instanceof ClassifiedOutpost) {
-            outpost.stopCharging();
+            ((ClassifiedOutpost) outpost).stopOutpost();
             player.sendMessage("ClassifiedOutpost " + outpostName + " has stopped charging.");
         } else {
             player.sendMessage("Outpost " + outpostName + " is not a ClassifiedOutpost and cannot stop charging.");

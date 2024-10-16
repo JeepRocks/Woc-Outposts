@@ -136,15 +136,13 @@ public class OutpostDatabaseManager {
 
     // Method to check if a player is already in the database
     private boolean isPlayerInDatabase(UUID playerUUID) throws SQLException {
-        plugin.getLogger().info("Checking if player " + playerUUID + " exists in the database.");
-
         String query = "SELECT uuid FROM players WHERE uuid = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(query)) {
             pstmt.setString(1, playerUUID.toString());
             try (ResultSet rs = pstmt.executeQuery()) {
                 boolean exists = rs.next();
-                plugin.getLogger().info("Player " + playerUUID + " exists in the database: " + exists);
-                return exists;
+                plugin.getLogger().info("Player exists in database: " + exists);
+                return exists;  // Returns true if a result is found
             }
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Could not check if player exists in database", e);
@@ -160,13 +158,13 @@ public class OutpostDatabaseManager {
             throw new SQLException("Player UUID or Name cannot be null");
         }
 
-// Check if the player is already in the database
+        // Check if the player is already in the database
         if (isPlayerInDatabase(playerUUID)) {
             plugin.getLogger().info("Player " + playerName + " is already in the database.");
-            return;  // Player already exists, no need to add
+            return;  // Player already exists
         }
 
-// Add the player to the database
+        // Add the player to the database
         String sql = "INSERT INTO players (uuid, playerName) VALUES (?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, playerUUID.toString());
@@ -176,7 +174,8 @@ public class OutpostDatabaseManager {
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Could not save player to database", e);
             throw new SQLException("Could not save player to database", e);
-        }}
+        }
+    }
 
     // Remove a player from the database
     public synchronized void removePlayerFromOutpostsDb(UUID playerUUID) throws SQLException {

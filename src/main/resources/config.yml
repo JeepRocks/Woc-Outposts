@@ -8,6 +8,7 @@ classified_outpost:
   charge_thresholds: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # Thresholds to balance the charge
   solo_player_boost: 1.0  # Boost for solo players
   team_boost: 0.5  # Boost for teams
+  charge_time_seconds: 300
 
 # General Outpost Settings
 outpost:

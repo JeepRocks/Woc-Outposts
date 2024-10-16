@@ -20,5 +20,4 @@ public abstract class Outpost {
     public abstract void stopCharging();
 
     public abstract void refillLoot();
-
 }
