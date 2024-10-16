@@ -68,8 +68,8 @@ public class ClassifiedOutpost extends Outpost {
         teamBoost = plugin.getConfig().getDouble("classified_outpost.team_boost", 0.5);
         soloPlayerBoost = plugin.getConfig().getDouble("classified_outpost.solo_player_boost", 1.0);
 
-        int chargeTimeSeconds = plugin.getConfig().getInt("classified_outpost.charge_time_seconds", 300);
-        chargePerSecond = 1.0 / chargeTimeSeconds;
+        int chargeTimeSeconds = plugin.getConfig().getInt("classified_outpost.charge_time_seconds", 180);
+        chargePerSecond = 100.0 / chargeTimeSeconds;
     }
 
     public void stopOutpost() {
@@ -94,7 +94,6 @@ public class ClassifiedOutpost extends Outpost {
         if (killer != null) {
             UUID killerUUID = killer.getUniqueId();
 
-            // Use getTeamByPlayer to get the Team object
             Team team = teamsDbManager.getTeamByPlayer(killer);
 
             if (team != null) {
@@ -244,26 +243,24 @@ public class ClassifiedOutpost extends Outpost {
         } else if (teamsInRadius.isEmpty() && playersInRadius.size() == 1) {
             UUID playerUUID = playersInRadius.iterator().next();
             if (controllingTeamId == null) {
-                // Solo player captures the outpost first
-                controllingTeamId = null; // No team, it's a solo player capture
-                plugin.getLogger().info("Player " + playerUUID + " has started capturing the outpost as a solo player.");
-            }
-
-            if (controllingTeamId == null) {
                 // Solo player charging
                 double boost = playerKillCount.getOrDefault(playerUUID, 0) * soloPlayerBoost;
                 currentCharge = Math.min(currentCharge + chargeIncrement + boost, 100.0);  // Cap at 100%
                 plugin.getLogger().info("Solo player outpost charge: " + currentCharge + "% with boost: " + boost + "%");
 
+                // Send charge update to player
+                Player player = plugin.getServer().getPlayer(playerUUID);
+                if (player != null) {
+                    sendChargeUpdate(player, currentCharge);
+                }
+
                 if (currentCharge >= 100) {
                     enterOvertime();
                 }
             }
-
         } else if (teamsInRadius.size() > 1) {
             // Multiple teams are contesting the outpost
             handleContest();
-
         } else {
             // No teams in radius, stop charging
             pauseCharging();
