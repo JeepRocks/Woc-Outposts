@@ -56,6 +56,7 @@ public class ClassifiedOutpost extends Outpost {
         this.teamsDbManager = plugin.getTeamsDatabaseManager();
         this.outpostDbManager = plugin.getDatabaseManager();
         loadConfig();
+        this.lastChargeTime = System.currentTimeMillis();
     }
 
     // Method to load configuration settings
@@ -326,6 +327,11 @@ public class ClassifiedOutpost extends Outpost {
         }
         chargingLogDisplayed = false; // Reset the log flag when charging is enabled again.
         startCharging(); // Call the charging process only if enabled.
+    }
+
+    public void resetCharge() {
+        this.currentCharge = 0.0;
+        this.lastChargeTime = System.currentTimeMillis();
     }
 
     private void enterOvertime() {

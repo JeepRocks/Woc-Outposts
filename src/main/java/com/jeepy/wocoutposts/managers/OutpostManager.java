@@ -103,9 +103,10 @@ public class OutpostManager {
             return;
         }
 
-        // Ensure only ClassifiedOutpost starts charging
         if (outpost instanceof ClassifiedOutpost) {
-            ((ClassifiedOutpost) outpost).setChargingEnabled(true); // Enable charging
+            ClassifiedOutpost classifiedOutpost = (ClassifiedOutpost) outpost;
+            classifiedOutpost.setChargingEnabled(true);
+            classifiedOutpost.resetCharge(); // Add a method to reset the charge and lastChargeTime
             outpost.startCharging();
             player.sendMessage("Charging for " + outpostName + " has started.");
         } else {
